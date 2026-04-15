@@ -45,6 +45,7 @@ const els = {
     btnIniciar: document.getElementById("btn-iniciar"),
     totalPerguntas: document.getElementById("total-perguntas"),
     totalCategorias: document.getElementById("total-categorias"),
+    loadingMsg: document.getElementById("loading-msg"), // ADICIONADO
 
     // questão
     questaoAtual: document.getElementById("questao-atual"),
@@ -125,64 +126,31 @@ function calcularPontos(segundosRestantes) {
 // Valida nickname (mínimo 2 chars).
 // Reseta o estado. Embaralha as perguntas.
 // Chama mostrarTela("questao") e mostrarPergunta().
-function iniciarJogo() {
-    try {
-        console.log("Iniciando jogo...");
-
-        // Verifica se elemento existe
-        if (!els.inputNickname) {
-            console.error("❌ ERRO: els.inputNickname não existe!");
-            return;
-        }
-
-        const nickname = els.inputNickname.value.trim();
-
-        console.log(`Nickname lido: "${nickname}" (length: ${nickname.length})`);
-        if (nickname.length < 2) {
-            if (els.erroNickname) {
-                els.erroNickname.textContent = "Digite pelo menos 2 caracteres.";
-            }
-            console.warn("❌ Nickname inválido (menos de 2 caracteres)");
-            return;
-        }
-        // Limpa erro
-        if (els.erroNickname) {
-            els.erroNickname.textContent = "";
-        }
-        // Salva nickname no estado
-        estado.nickname = nickname;
-        console.log(`Nickname aceito: "${nickname}"`);
-        // Reseta pontos, índice, acertos e erros
-        estado.pontos = 0;
-        estado.indiceAtual = 0;
-        estado.acertos = 0;
-        estado.erros = 0;
-        // Verifica se há perguntas
-        if (!perguntas || perguntas.length === 0) {
-            console.error("❌ ERRO: Nenhuma pergunta carregada! Verifique questions.js");
-            if (els.erroNickname) {
-                els.erroNickname.textContent = "Erro: Perguntas não carregadas.";
-            }
-            return;
-        }
-        estado.perguntasJogo = embaralhar(perguntas);
-        console.log(`🔀 Perguntas embaralhadas (${estado.perguntasJogo.length} total)`);
-        console.log("🔀 Ordem dos primeiros IDs após embaralhar:", estado.perguntasJogo.slice(0, 5).map(p => p.id));
-        console.log("📄 Mudando para tela de questão...");
-        mostrarTela("telaQuestao");
-        console.log("✅ Tela de questão ativada");
-        // Mostra a primeira pergunta
-        console.log("Carregando primeira pergunta...");
-        mostrarPergunta();
-    } catch (erro) {
-        console.error("❌ ERRO ao iniciar jogo:", erro);
-        console.error("Stack:", erro.stack);
-        if (els.erroNickname) {
-            els.erroNickname.textContent = "Erro ao iniciar o jogo. Veja o console.";
-        }
+async function iniciarJogo() {
+    let nome = els.inputNickname.value.trim()
+    if (nome.length < 3) {
+        els.erroNickname.textContent = "Digite pelo menos 3 caracteres."
+        return
     }
+    els.erroNickname.textContent = "";
+    estado.nickname = nome;
+    estado.pontos = 0;
+    estado.indiceAtual = 0;
+    estado.acertos = 0;
+    estado.erros = 0;
+    let todasPerguntas   = await window.bancoDePerguntasAsync
+    estado.perguntasJogo = embaralhar(todasPerguntas)
+    mostrarTela("telaQuestao")
+    mostrarPergunta()
 }
 
+els.inputNickname.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+        iniciarJogo()
+    }
+})
+
+els.btnIniciar.addEventListener("click", iniciarJogo)
 
 // mostrarPergunta()
 // Pega estado.perguntasJogo[estado.indiceAtual].
@@ -192,202 +160,190 @@ function iniciarJogo() {
 // Atenção: use "let i" no for, não "var i".
 // Chama iniciarTimer().
 function mostrarPergunta() {
-    let pergunta = estado.perguntasJogo[estado.indiceAtual];
-    estado.respondeu = false;
-
+    let pergunta = estado.perguntasJogo[estado.indiceAtual]
+    estado.respondeu = false
     let num = estado.indiceAtual + 1;
-    let total = estado.perguntasJogo.length;
-
-    els.questaoAtual.textContent = num;
-    els.questaoTotal.textContent = total;
-    els.barraFill.style.width = (num / total * 100) + "%";
-
-    els.categoriaTag.textContent = pergunta.categoria;
-    els.questaoTexto.textContent = pergunta.pergunta;
-
-    els.opcoesGrid.innerHTML = "";
-    let letras = ["A", "B", "C", "D"];
-    let classes = ["opcao-a", "opcao-b", "opcao-c", "opcao-d"];
+    let total = estado.perguntasJogo.length
+    els.questaoAtual.textContent = num
+    els.questaoTotal.textContent = total
+    els.barraFill.style.width = ((num / total) * 100) + "%"
+    els.categoriaTag.textContent = pergunta.categoria
+    els.questaoTexto.textContent = pergunta.pergunta
+    els.opcoesGrid.innerHTML = ""
+    let letras = ["A", "B", "C", "D"]
+    let classes = ["opcao-a", "opcao-b", "opcao-c", "opcao-d"]
     for (let i = 0; i < pergunta.opcoes.length; i++) {
-        let btn = document.createElement("button");
-        btn.className = "opcao-btn";
-        btn.type = "button";
-
-        let spanLetra = document.createElement("span");
-        spanLetra.className = "opcao-letra " + classes[i];
-        spanLetra.textContent = letras[i];
-
-        let spanTexto = document.createElement("span");
-        spanTexto.className = "opcao-texto";
-        spanTexto.textContent = pergunta.opcoes[i];
-
-        btn.appendChild(spanLetra);
-        btn.appendChild(spanTexto);
-
+        let btn = document.createElement("button")
+        btn.className = "opcao-btn"
+        btn.type = "button"
+        let spanLetra = document.createElement("span")
+        spanLetra.className = "opcao-letra " + classes[i]
+        spanLetra.textContent = letras[i]
+        let spanTexto = document.createElement("span")
+        spanTexto.className = "opcao-texto"
+        spanTexto.textContent = pergunta.opcoes[i]
+        btn.appendChild(spanLetra)
+        btn.appendChild(spanTexto)
         btn.addEventListener("click", function () {
             responder(i)
         })
-
         els.opcoesGrid.appendChild(btn)
     }
-
-    iniciarTimer();
+    iniciarTimer()
 }
 
-    // iniciarTimer()
-    // Reseta timerSegundos para 20.
-    // clearInterval antes de criar um novo setInterval.
-    // A cada 1000ms: decrementa, atualiza DOM, move arco SVG.
-    // Se timerSegundos <= 0: clearInterval e responder(-1).
-    function iniciarTimer() {
+// iniciarTimer()
+// Reseta timerSegundos para 20.
+// clearInterval antes de criar um novo setInterval.
+// A cada 1000ms: decrementa, atualiza DOM, move arco SVG.
+// Se timerSegundos <= 0: clearInterval e responder(-1).
+function iniciarTimer() {
 
-        let CIRCUNFERENCIA = 107
+    let CIRCUNFERENCIA = 107
 
-        estado.timerSegundos = 20;
-        els.timerNum.textContent = 20;
-        els.timerArco.style.strokeDashoffset = 0;
-        els.timerArco.style.stroke = "var(--laranja)";
+    estado.timerSegundos = 20;
+    els.timerNum.textContent = 20;
+    els.timerArco.style.strokeDashoffset = 0;
+    els.timerArco.style.stroke = "var(--laranja)";
 
-        clearInterval(estado.timerIntervalo);
+    clearInterval(estado.timerIntervalo);
 
-        estado.timerIntervalo = setInterval(function(){
-            estado.timerSegundos--
-            els.timerNum.textContent = estado.timerSegundos;
+    estado.timerIntervalo = setInterval(function () {
+        estado.timerSegundos--
+        els.timerNum.textContent = estado.timerSegundos;
 
-            let progresso = estado.timerSegundos / 20
+        let progresso = estado.timerSegundos / 20
 
-            els.timerArco.style.strokeDashoffset = CIRCUNFERENCIA * (1 - progresso);
+        els.timerArco.style.strokeDashoffset = CIRCUNFERENCIA * (1 - progresso);
 
-            if (estado.timerSegundos <= 5) {
-                els.timerArco.style.stroke = "var(--vermelho)";
-            } else if (estado.timerSegundos <= 10) {
-                els.timerArco.style.stroke = "var(--amarelo)";
-            }
-
-            if (estado.timerSegundos <= 0) {
-                clearInterval(estado.timerIntervalo);
-                responder(-1);
-            }
-
-        }, 1000)
-    }
-
-
-    // responder(indiceEscolhido)
-    // Guarda de segurança: if (estado.respondeu) return.
-    // clearInterval do timer.
-    // Compara indiceEscolhido com pergunta.correta.
-    // Marca botões com classList: "correta" e "errada".
-    // setTimeout de 1s → mostrarFeedback().
-    function responder(indiceEscolhido) {
-        if (estado.respondeu) {
-            return;
+        if (estado.timerSegundos <= 5) {
+            els.timerArco.style.stroke = "var(--vermelho)";
+        } else if (estado.timerSegundos <= 10) {
+            els.timerArco.style.stroke = "var(--amarelo)";
         }
-        estado.respondeu = true;
 
-        let pergunta = estado.perguntasJogo[estado.indiceAtual];
-        let acertou = (indiceEscolhido === pergunta.correta);
-
-        let botoes = els.opcoesGrid.querySelectorAll("button");
-        botoes.forEach(function (btn, index) {
-            if (index === pergunta.correta) {
-                btn.classList.add("correta");
-            } else if (index === indiceEscolhido) {
-                btn.classList.add("errada");
-            }
-        });
-
-        setTimeout(function () {
-            if (acertou) {
-                let pontosGanhos = calcularPontos(estado.timerSegundos);
-                estado.pontos += pontosGanhos;
-                estado.acertos++;
-                mostrarFeedback(true, pontosGanhos, pergunta.explicacao);
-            } else {
-                estado.erros++;
-                mostrarFeedback(false, 0, pergunta.explicacao);
-            }
-        }, 1000);
-    }
-
-    // mostrarFeedback(acertou, pontosGanhos, explicacao)
-    // Atualiza ícone, título, pontos e explicação.
-    // Chama mostrarTela("feedback").
-    function mostrarFeedback(acertou, pontosGanhos, explicacao) {
-        if (acertou) {
-            els.feedbackIcone.textContent = "✅";
-            els.feedbackTitulo.textContent = "Resposta correta!";
-            els.feedbackTitulo.className = "feedback-titulo correta";
-            els.feedbackPontos.textContent = "+" + pontosGanhos + " pontos";
-        } else {
-            els.feedbackIcone.textContent = "❌";
-            els.feedbackTitulo.textContent = "Resposta incorreta!";
-            els.feedbackTitulo.className = "feedback-titulo errada";
-            els.feedbackPontos.textContent = "0 pontos";
+        if (estado.timerSegundos <= 0) {
+            clearInterval(estado.timerIntervalo);
+            responder(-1);
         }
-        els.feedbackExplic.textContent = explicacao;
-        els.placarParcial.textContent = "+" + estado.pontos;
-        mostrarTela("telaFeedback");
+
+    }, 1000)
+}
+
+
+// responder(indiceEscolhido)
+// Guarda de segurança: if (estado.respondeu) return.
+// clearInterval do timer.
+// Compara indiceEscolhido com pergunta.correta.
+// Marca botões com classList: "correta" e "errada".
+// setTimeout de 1s → mostrarFeedback().
+function responder(indiceEscolhido) {
+    if (estado.respondeu){
+        return
     }
+    estado.respondeu = true 
 
+    let pergunta = estado.perguntasJogo[estado.indiceAtual]
+    let indiceCorreto = pergunta.correta
+    let acertou       = (indiceEscolhido === indiceCorreto)
 
-    // proximaPergunta()
-    // indiceAtual++
-    // Se ainda há perguntas → mostrarPergunta().
-    // Senão → mostrarResultado().
-    function proximaPergunta() {
-        estado.indiceAtual++;
-        if (estado.indiceAtual < estado.perguntasJogo.length) {
-            mostrarTela("telaQuestao");
-            mostrarPergunta();
-        } else {
-            mostrarResultado();
+    let botoes = els.opcoesGrid.querySelectorAll(".opcao-btn")
+
+    botoes.forEach(function(btn,idx){
+        btn.disabled = true 
+        if (idx === indiceCorreto) {
+            btn.classList.add("correta")
+        } else if (idx === indiceEscolhido){
+            btn.classList.add("errada")
         }
-    }
-
-    els.btnProxima.addEventListener("click", proximaPergunta);
-
-    // mostrarResultado()
-    // Calcula aproveitamento. Define medalha e mensagem.
-    // Atualiza DOM da tela de resultado.
-    // Chama mostrarTela("resultado").
-    function mostrarResultado() {
-        let total = estado.perguntasJogo.length;
-        let aproveitamento = Math.round((estado.acertos / total) * 100);
-
-        let mensagem = "Continue Praticando!";
-        let medalha = "🪦";
-        if (aproveitamento >= 80) {
-            medalha = "🥇";
-            mensagem = "Excelente desempenho! parabéns!";
-        } else if (aproveitamento >= 60) {
-            medalha = "🥈";
-            mensagem = "Bom desempenho!";
-        } else {
-            medalha = "🥉";
-            mensagem = "Continue praticando para melhorar!";
+    })
+    setTimeout(function(){
+        if (acertou){
+            let pts = calcularPontos(estado.timerSegundos)
+            estado.pontos+= pts
+            estado.acertos++
+            mostrarFeedback(true, pts, pergunta.explicacao)
+        }else {
+            estado.erros++
+            mostrarFeedback(false, 0, pergunta.explicacao)
         }
-        els.resultadoMedalha.textContent = medalha;
-        els.resultadoNome.textContent = estado.nickname;
-        els.scoreFinal.textContent = estado.pontos + " pontos";
-        els.statAcertos.textContent = estado.acertos;
-        els.statErros.textContent = estado.erros;
-        els.statPorcento.textContent = aproveitamento + "%";
-        els.resultadoMsg.textContent = mensagem;
-        mostrarTela("telaResultado");
+    }, 1000)
+}
+// mostrarFeedback(acertou, pontosGanhos, explicacao)
+// Atualiza ícone, título, pontos e explicação.
+// Chama mostrarTela("feedback").
+function mostrarFeedback(acertou, pontosGanhos, explicacao) {
+    if(acertou){
+        els.feedbackIcone.textContent = "😉✅"
+        els.feedbackTitulo.textContent = "Correto!"
+        els.feedbackTitulo.className = "feedback-titulo acerto"
+        els.feedbackPontos.textContent = pontosGanhos
+    } else{
+        els.feedbackIcone.textContent = "❌"
+        els.feedbackTitulo.textContent = "Errado!"
+        els.feedbackTitulo.className = "feedback-titulo erro"
+        els.feedbackPontos.textContent = "0"
     }
+    els.feedbackExplic.textContent = explicacao 
+    els.placarParcial.textContent = estado.pontos 
+    mostrarTela("telaFeedback")
+}
 
 
-    // reiniciarJogo()
-    // Limpa o campo de nickname.
-    // Chama mostrarTela("home").
-    function reiniciarJogo() {
-        els.inputNickname.value = "";
-        mostrarTela("telaHome");
+// proximaPergunta()
+// indiceAtual++
+// Se ainda há perguntas → mostrarPergunta().
+// Senão → mostrarResultado().
+function proximaPergunta() {
+    estado.indiceAtual++
+    if (estado.indiceAtual < estado.perguntasJogo.length){
+        mostrarTela("telaQuestao")
+        mostrarPergunta()
+    }else {
+        mostrarResultado()
     }
+}
 
-els.btnJogarNovamente.addEventListener("click", reiniciarJogo);
+els.btnProxima.addEventListener("click", proximaPergunta);
 
+// mostrarResultado()
+// Calcula aproveitamento. Define medalha e mensagem.
+// Atualiza DOM da tela de resultado.
+// Chama mostrarTela("resultado").
+function mostrarResultado() {
+    let total = estado.perguntasJogo.length
+    let aproveitamento = Math.round((estado.acertos /total) * 100)
+    let medalha = "⚰️"
+    let mensagem = "Continue praticando, você vai melhorar!"
+    if (aproveitamento >= 90){
+        medalha = "🥇"
+        mensagem = "Incrível! Você domina o conteúdo!"
+    } else if (aproveitamento >= 70){
+        medalha = "🥈"
+        mensagem = "Muito de bom! Esta no caminho certo, estude um pouco mais..."
+    } else if (aproveitamento >= 50){
+        medalha = "🥉"
+        mensagem = "Bom, revise e tente novamente!"
+    }
+    els.resultadoMedalha.textContent = medalha 
+    els.resultadoNome.textContent = estado.nickname
+    els.scoreFinal.textContent = estado.pontos
+    els.statAcertos.textContent = estado.acertos
+    els.statErros.textContent = estado.erros
+    els.statPorcento.textContent = aproveitamento + "%"
+    els.resultadoMsg.textContent = mensagem 
+    mostrarTela("telaResultado")
+}
+
+
+// reiniciarJogo()
+// Limpa o campo de nickname.
+// Chama mostrarTela("home").
+function reiniciarJogo() {
+    els.inputNickname.value = "";
+    mostrarTela("telaHome");
+}
+els.btnJogarNovamente.addEventListener('click', reiniciarJogo)
 
 // ------------------------------------------------------------
 // 5. EVENTOS
@@ -411,20 +367,29 @@ els.inputNickname.addEventListener("keydown", function (e) {
 // Crie a função init() e chame ela aqui.
 // Ela deve preencher totalPerguntas e totalCategorias na home.
 // ------------------------------------------------------------
-function init() {
-    let categorias = [];
+async function init() {
+    els.btnIniciar.disabled = true
+    if (els.loadingMsg) els.loadingMsg.textContent = "carregando perguntas..."
 
-    for (let i = 0; i < perguntas.length; i++) {
-        if (categorias.indexOf(perguntas[i].categoria) === -1) {
-            categorias.push(perguntas[i].categoria);
+    try {
+        let perguntas = await window.bancoDePerguntasAsync
+
+        let categorias = []
+        for (let i = 0; i < perguntas.length; i++) {
+            if (categorias.indexOf(perguntas[i].categoria) === -1) {
+                categorias.push(perguntas[i].categoria)
+            }
         }
+
+        els.totalPerguntas.textContent = perguntas.length
+        els.totalCategorias.textContent = categorias.length
+        if (els.loadingMsg) els.loadingMsg.textContent = ""
+        els.btnIniciar.disabled = false
+
+    } catch (erro) {
+        if (els.loadingMsg) els.loadingMsg.textContent = "Erro ao carregar. recarregue a página."
+        console.error("[QuizCaju] Falha na inicialização:", erro)
     }
-    console.log("Categorias encontradas:", categorias);
-
-    els.totalPerguntas.textContent = perguntas.length;
-    els.totalCategorias.textContent = categorias.length;
-
-    // event listeners de btnProxima e btnJogarNovamente já adicionados acima
 }
 
-init();
+init()
