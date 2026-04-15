@@ -45,6 +45,10 @@ const els = {
     btnIniciar: document.getElementById("btn-iniciar"),
     totalPerguntas: document.getElementById("total-perguntas"),
     totalCategorias: document.getElementById("total-categorias"),
+    btnCategorias: document.getElementById("btn-categorias"),
+    modalCategorias: document.getElementById("modal-categorias"),
+    listaCategorias: document.getElementById("lista-categorias"),
+    btnFecharModal: document.getElementById("btn-fechar-modal"),
     loadingMsg: document.getElementById("loading-msg"), // ADICIONADO
 
     // questão
@@ -361,6 +365,26 @@ els.inputNickname.addEventListener("keydown", function (e) {
     }
 });
 
+if (els.btnCategorias && els.modalCategorias) {
+    els.btnCategorias.addEventListener("click", function() {
+        if (window.categoriasGlobais && window.categoriasGlobais.length > 0) {
+            els.listaCategorias.innerHTML = "";
+            window.categoriasGlobais.forEach(function(cat) {
+                let li = document.createElement("li");
+                li.textContent = "🔸 " + cat;
+                els.listaCategorias.appendChild(li);
+            });
+            els.modalCategorias.classList.add("ativo");
+        } else {
+            alert("As categorias ainda estão sendo carregadas...");
+        }
+    });
+
+    els.btnFecharModal.addEventListener("click", function() {
+        els.modalCategorias.classList.remove("ativo");
+    });
+}
+
 
 // ------------------------------------------------------------
 // 6. INICIALIZAÇÃO
@@ -381,6 +405,7 @@ async function init() {
             }
         }
 
+        window.categoriasGlobais = categorias;
         els.totalPerguntas.textContent = perguntas.length
         els.totalCategorias.textContent = categorias.length
         if (els.loadingMsg) els.loadingMsg.textContent = ""

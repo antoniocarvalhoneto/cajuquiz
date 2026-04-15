@@ -541,3 +541,51 @@ body {
   z-index: 1000;
   color: #333;
 }
+
+/* ── Categorias botao ─────────────────────── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal-overlay.ativo {
+  display: flex;
+}
+.modal-conteudo {
+  background: var(--cor-superficie);
+  border-radius: var(--raio);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 360px;
+  border: 1px solid var(--cor-borda);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
+}
+.modal-titulo {
+  font-size: 1.25rem;
+  color: var(--cor-primaria);
+  font-weight: 800;
+  margin-bottom: 1rem;
+}
+.modal-lista {
+  list-style: none;
+  text-align: left;
+  margin-bottom: 1.5rem;
+  max-height: 250px;
+  overflow-y: auto;
+}
+.modal-lista li {
+  padding: 0.6rem 0.5rem;
+  border-bottom: 1px solid var(--cor-borda);
+  color: var(--cor-texto);
+  font-family: var(--fonte-mono);
+  font-size: 0.9rem;
+}
+.modal-lista li:last-child {
+  border-bottom: none;
+}
